@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="assets_backend" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <script src="/quick_view_product_by_hover/static/src/js/pop_up_on_product.js"
+                    type="text/javascript"/>
+        </xpath>
+    </template>
+</odoo>
