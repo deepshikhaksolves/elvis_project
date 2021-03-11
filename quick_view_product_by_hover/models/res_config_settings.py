@@ -27,5 +27,5 @@ class ResConfigSettingsExtend(models.TransientModel):
                                                          self.purchase_enable_product_info)
         self.env['ir.config_parameter'].sudo().set_param('sale_enable_product_info',
                                                          self.sale_enable_product_info)
-        self.env['ir.config_parameter'].sudo().set_param('ks_crm.account_enable_product_info',
+        self.env['ir.config_parameter'].sudo().set_param('account_enable_product_info',
                                                          self.account_enable_product_info)

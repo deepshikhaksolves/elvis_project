@@ -25,25 +25,23 @@ class PurchaseOrderExtend(models.Model):
              ('move_type', '=', 'in_invoice')], order="invoice_date desc")
         last_product_bills = last_bills.mapped('line_ids').filtered(
             lambda inv_line: inv_line.product_id == product_id)
-        # stock location without parent location
-        locations = self.env['stock.location'].search([('location_id', '=', None)])
+        # get on hand quantity and available quantity 's details
         warehouse_qty_on_hand = []
         warehouse_available_qty = []
-        for each_loc in locations:
-            on_hand_qty = 0
-            available_qty = 0
-            qty = self.env['stock.quant'].read_group(
-                [('location_id', 'child_of', each_loc.id)],
-                ['available_quantity: sum(available_quantity)',
-                 'quantity: sum(quantity)'],
-                ['product_id'])
-            if qty:
-                on_hand_qty = qty[0]['quantity']
-            warehouse_qty_on_hand.append({'name': each_loc.name,
-                                          'qty': on_hand_qty})
-            warehouse_available_qty.append({'name': each_loc.name,
-                                            'qty': available_qty})
-
+        total_on_hand = 0
+        total_available = 0
+        for each_company in self.env.company:
+            onhand_stock = self.env['stock.quant'].search([('company_id', '=', each_company.id),
+                                                           ('product_id', '=', product_id.id),
+                                                           ('on_hand', '=', True)])
+            if onhand_stock:
+                for each_location_onhand_stock in onhand_stock:
+                    warehouse_qty_on_hand.append({'name': each_location_onhand_stock.location_id.display_name,
+                                                  'qty': each_location_onhand_stock.quantity})
+                    warehouse_available_qty.append({'name': each_location_onhand_stock.location_id.display_name,
+                                                    'qty': each_location_onhand_stock.available_quantity})
+                    total_on_hand += each_location_onhand_stock.quantity
+                    total_available += each_location_onhand_stock.available_quantity
         return {
             'last_inv_date': last_product_invoices[0].move_id.invoice_date if last_product_invoices else '',
             'last_inv_currency': last_product_invoices[0].currency_id.symbol if last_product_invoices else '',
@@ -51,7 +49,8 @@ class PurchaseOrderExtend(models.Model):
             'last_bill_date': last_product_bills[0].move_id.invoice_date if last_product_bills else '',
             'last_bill_currency': last_product_bills[0].currency_id.symbol if last_product_bills else '',
             'last_bill_amount': last_product_bills[0].price_unit if last_product_bills else 0,
-            'total_on_hand_qty': product_id.qty_available,
+            'total_on_hand': total_on_hand,
+            'total_available': total_available,
             'warehouse_on_hand_qty': warehouse_qty_on_hand,
             'warehouse_available_qty': warehouse_available_qty,
         }

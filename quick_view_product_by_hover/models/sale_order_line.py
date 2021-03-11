@@ -21,29 +21,27 @@ class SaleOrderLineExtend(models.Model):
             lambda inv_line: inv_line.product_id == product_id)
         # get last billed details
         last_bills = self.env['account.move'].search(
-            [('state', '=', 'posted'),('move_type', '=', 'in_invoice')],
+            [('state', '=', 'posted'), ('move_type', '=', 'in_invoice')],
             order="invoice_date desc")
         last_product_bills = last_bills.mapped('line_ids').filtered(
             lambda inv_line: inv_line.product_id == product_id)
-        # stock location without parent location
-        locations = self.env['stock.location'].search([('location_id', '=', None)])
+        # get on hand quantity and available quantity 's details
         warehouse_qty_on_hand = []
         warehouse_available_qty = []
-        for each_loc in locations:
-            on_hand_qty = 0
-            available_qty = 0
-            qty = self.env['stock.quant'].read_group(
-                [('product_id', '=', product_id.id), ('on_hand', '=', True)],
-                ['available_quantity: sum(available_quantity)','quantity: sum(quantity)'],
-                ['product_id'])
-            if qty:
-                # quantity = qty.filtered(lambda stock_quant: stock_quant.location_id.company_id = self.user.company_ids.ids)
-                on_hand_qty = qty[0]['quantity']
-                # available_qty = qty[0]['available_quantity']
-            warehouse_qty_on_hand.append({'name': each_loc.name,
-                                          'qty': on_hand_qty})
-            warehouse_available_qty.append({'name': each_loc.name,
-                                            'qty': available_qty})
+        total_on_hand = 0
+        total_available = 0
+        for each_company in self.env.company:
+            onhand_stock = self.env['stock.quant'].search([('company_id', '=', each_company.id),
+                                                           ('product_id', '=', product_id.id),
+                                                           ('on_hand', '=', True)])
+            if onhand_stock:
+                for each_location_onhand_stock in onhand_stock:
+                    warehouse_qty_on_hand.append({'name': each_location_onhand_stock.location_id.display_name,
+                                                  'qty': each_location_onhand_stock.quantity})
+                    warehouse_available_qty.append({'name': each_location_onhand_stock.location_id.display_name,
+                                                    'qty': each_location_onhand_stock.available_quantity})
+                    total_on_hand += each_location_onhand_stock.quantity
+                    total_available += each_location_onhand_stock.available_quantity
 
         return {
             'last_inv_date': last_product_invoices[0].move_id.invoice_date if last_product_invoices else '',
@@ -52,40 +50,8 @@ class SaleOrderLineExtend(models.Model):
             'last_bill_date': last_product_bills[0].move_id.invoice_date if last_product_bills else '',
             'last_bill_currency': last_product_bills[0].currency_id.symbol if last_product_bills else '',
             'last_bill_amount': last_product_bills[0].price_unit if last_product_bills else 0,
-            'total_on_hand_qty': product_id.qty_available,
+            'total_on_hand': total_on_hand,
+            'total_available': total_available,
             'warehouse_on_hand_qty': warehouse_qty_on_hand,
             'warehouse_available_qty': warehouse_available_qty,
         }
-
-
-    def action_open_quants(self):
-        domain = [('product_id', 'in', self.ids)]
-        hide_location = not self.user_has_groups('stock.group_stock_multi_locations')
-        hide_lot = all(product.tracking == 'none' for product in self)
-        self = self.with_context(
-            hide_location=hide_location, hide_lot=hide_lot,
-            no_at_date=True, search_default_on_hand=True,
-        )
-
-        # If user have rights to write on quant, we define the view as editable.
-        if self.user_has_groups('stock.group_stock_manager'):
-            self = self.with_context(inventory_mode=True)
-            # Set default location id if multilocations is inactive
-            if not self.user_has_groups('stock.group_stock_multi_locations'):
-                user_company = self.env.company
-                warehouse = self.env['stock.warehouse'].search(
-                    [('company_id', '=', user_company.id)], limit=1
-                )
-                if warehouse:
-                    self = self.with_context(default_location_id=warehouse.lot_stock_id.id)
-        # Set default product id if quants concern only one product
-        if len(self) == 1:
-            self = self.with_context(
-                default_product_id=self.id,
-                single_product=True
-            )
-        else:
-            self = self.with_context(product_tmpl_ids=self.product_tmpl_id.ids)
-        action = self.env['stock.quant']._get_quants_action(domain)
-        action["name"] = _('Update Quantity')
-        return action
