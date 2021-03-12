@@ -14,8 +14,11 @@
     'version': '14.0.0.1',
     'depends': ['sale_management', 'purchase', 'account'],
     'data': [
-        'views/res_config_settings_view.xml',
         'views/assets.xml',
+        'views/res_config_settings_view.xml',
+    ],
+    'qweb': [
+        'static/src/xml/pop_up_template.xml',
     ],
     'installable': True,
     'application': True,

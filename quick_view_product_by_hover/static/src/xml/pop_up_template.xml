@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <t t-name="quick_view_product_by_hover.product_detail_template">
+        <div style="height:100%; width:auto;">
+            <h4 style="background-color: #DCDCDC;color: Black;"><t t-esc="product_name"/></h4>
+            <table>
+                <tr>
+                    <td><b>Last Billed Date: </b></td>
+                    <td><t t-esc="last_bill_date"/></td>
+                </tr>
+                <tr>
+                    <td><b>Last Billed Price: </b> </td>
+                    <td><t t-esc="last_bill_amount"/></td>
+                </tr>
+                <tr>
+                    <td><b>Last Invoice Date: </b></td>
+                    <td><t t-esc="last_inv_date"/></td>
+                </tr>
+                <tr>
+                    <td><b>Last Invoice Price: </b></td>
+                    <td><t t-esc="last_inv_amount"/></td>
+                </tr>
+                <tr>
+                    <td><b> Warehouse Qty: </b></td>
+                    <td>
+                        <div>
+                            <table>
+                                <tr t-foreach="warehouse_on_hand_qty" t-as="on_hand_data">
+                                        <td><b><t t-esc="on_hand_data['name']"/> : </b></td>
+                                        <td><t t-esc="on_hand_data ['qty']"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td> <b> Total Qty on Hand: </b></td>
+                    <td><t t-esc="total_on_hand"/></td>
+                </tr>
+                <tr>
+                    <td><b>Warehouse Available Qty:</b></td>
+                    <td>
+                        <div>
+                            <table>
+                                <tr t-foreach="warehouse_available_qty" t-as="available_qty_data">
+                                    <td><b><t t-esc="available_qty_data['name']"/> : </b></td>
+                                    <td><t t-esc="available_qty_data ['qty']"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><b>Total Available Qty: </b></td>
+                    <td><t t-esc="total_available"/></td>
+                </tr>
+            </table>
+        </div>
+    </t>
+</templates>

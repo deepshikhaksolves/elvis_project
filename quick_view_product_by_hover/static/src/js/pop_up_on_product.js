@@ -2,15 +2,20 @@ odoo.define('quick_view_product_by_hover.popover_on_hover', function (require) {
     "use strict";
 
     var ListRenderer = require("web.ListRenderer");
+    //    for session
     var session = require('web.session');
+    //    for getting value from function.
     var rpc = require('web.rpc');
+    //    qweb for template calling
+    var core = require ('web.core');
+    var QWeb = core.qweb;
     ListRenderer.include({
         init: function () {
             this._super.apply(this, arguments);
         },
         events: _.extend({}, ListRenderer.prototype.events, {
-            'mouseover table tbody td.o_list_many2one:first': '_on_hovering_mouse',
-            'mouseover table tbody td.o_list_many2one:first': '_on_not_hovering_mouse',
+            'mouseover tbody td.o_data_cell': '_on_hovering_mouse',
+            'mouseout tbody td.o_data_cell': '_on_not_hovering_mouse',
         }),
         // Mouser Hover event for the Pop Over
         _on_hovering_mouse: function (event) {
@@ -24,15 +29,9 @@ odoo.define('quick_view_product_by_hover.popover_on_hover', function (require) {
                 var $td = $(event.currentTarget);
                 var $tr = $td.parent();
                 var rowIndex = this.$('.o_data_row').index($tr);
-                var last_inv_date = ''
-                var last_inv_amount = 0
-                var last_bill_date = ''
-                var last_bill_amount = 0
-                var total_on_hand = 0
-                var total_available = 0
-                var warehouse_on_hand_qty = []
-                var  warehouse_available_qty = []
+                var content
                 if (self.state.data[rowIndex].data.product_id){
+//                  Pop-up On sale order line records.
                     if (self.state.data[rowIndex].data.id && self.state.model=='sale.order.line') {
                         rpc.query({
                                    model: 'sale.order.line',
@@ -41,85 +40,23 @@ odoo.define('quick_view_product_by_hover.popover_on_hover', function (require) {
                                            'rec_id': self.state.data[rowIndex].data.id
                                            }]
                                    },{async: false}).then(function (result) {
-                                                                last_inv_date = result["last_inv_date"]
-                                                                last_inv_amount = result["last_inv_currency"] + ' ' + result["last_inv_amount"]
-                                                                last_bill_date = result["last_bill_date"]
-                                                                last_bill_amount = result["last_bill_currency"] + ' ' + result["last_bill_amount"]
-                                                                total_on_hand = result['total_on_hand']
-                                                                total_available = result['total_available']
-                                                                warehouse_on_hand_qty = result['warehouse_on_hand_qty']
-                                                                warehouse_available_qty = result['warehouse_available_qty']
+                                   content = QWeb.render('quick_view_product_by_hover.product_detail_template', {
+                                   product_name :  self.state.data[rowIndex].data.name,
+                                   last_bill_date: result["last_bill_date"],
+                                   last_bill_amount: result["last_bill_currency"] + ' ' + result["last_bill_amount"],
+                                   last_inv_date: result["last_inv_date"],
+                                   last_inv_amount: result["last_inv_currency"] + ' ' + result["last_inv_amount"],
+                                   total_on_hand: result['total_on_hand'],
+                                   total_available: result['total_available'],
+                                   warehouse_on_hand_qty: result['warehouse_on_hand_qty'],
+                                   warehouse_available_qty: result['warehouse_available_qty'],
+                                   });
                                    self.$el.find('tbody').popover('dispose');
                                    self.$el.find('tbody').popover(
                                        {
                                            animation: true,
                                            'content': function(e){
-                                                   return '<div style="height:100%; width:auto;"><h4 style="background-color: #DCDCDC;color: Black;">'+self.state.data[rowIndex].data.name+'</h4>'+
-                                                           '<table>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Billed Date: </b></td>'+
-                                                               ' <td>'+last_bill_date+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Billed Price: </b></td>'+
-                                                               ' <td>'+last_bill_amount+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Invoice Date: </b></td>'+
-                                                               ' <td>'+last_inv_date+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Invoice Price: </b></td>'+
-                                                               ' <td>'+last_inv_amount+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b> Warehouse Qty: </b></td>'+
-                                                               ' <td>'+
-                                                                   ' <div> <table>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 1 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 2 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 3 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                   ' </table> </div>'+
-                                                               ' </td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td> <b> Total Qty on Hand: </b></td>'+
-                                                               ' <td>'+total_on_hand+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Warehouse Available Qty:</b></td>'+
-                                                               ' <td>'+
-                                                                   ' <div> <table>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 1 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 2 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 3 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                   ' </table> </div>'+
-                                                               ' </td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Total Available Qty: </b></td>'+
-                                                               ' <td>'+ total_available +'</td>'+
-                                                           ' </tr>'+
-                                                           '</table></div>'
-                                           },
+                                                   return content},
                                            'html': true,
                                            'placement':  function(c,s){
                                                return $(s).position().top < 200 ?'bottom':'top'
@@ -138,85 +75,23 @@ odoo.define('quick_view_product_by_hover.popover_on_hover', function (require) {
                                            'type': self.state.context.default_move_type
                                            }]
                                    },{async: false}).then(function (result) {
-                                                                last_inv_date = result["last_inv_date"]
-                                                                last_inv_amount = result["last_inv_currency"] + ' ' + result["last_inv_amount"]
-                                                                last_bill_date = result["last_bill_date"]
-                                                                last_bill_amount = result["last_bill_currency"] + ' ' + result["last_bill_amount"]
-                                                                total_on_hand = result['total_on_hand']
-                                                                total_available = result['total_available']
-                                                                warehouse_on_hand_qty = result['warehouse_on_hand_qty']
-                                                                warehouse_available_qty = result['warehouse_available_qty']
+                                   content = QWeb.render('quick_view_product_by_hover.product_detail_template', {
+                                   product_name :  self.state.data[rowIndex].data.name,
+                                   last_bill_date: result["last_bill_date"],
+                                   last_bill_amount: result["last_bill_currency"] + ' ' + result["last_bill_amount"],
+                                   last_inv_date: result["last_inv_date"],
+                                   last_inv_amount: result["last_inv_currency"] + ' ' + result["last_inv_amount"],
+                                   total_on_hand: result['total_on_hand'],
+                                   total_available: result['total_available'],
+                                   warehouse_on_hand_qty: result['warehouse_on_hand_qty'],
+                                   warehouse_available_qty: result['warehouse_available_qty'],
+                                   });
                                    self.$el.find('tbody').popover('dispose');
                                    self.$el.find('tbody').popover(
                                        {
                                            animation: true,
                                            'content': function(e){
-                                                   return '<div style="height:100%; width:auto;"><h4 style="background-color: #DCDCDC;color: Black;">'+self.state.data[rowIndex].data.name+'</h4>'+
-                                                           '<table>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Billed Date: </b></td>'+
-                                                               ' <td>'+last_bill_date+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Billed Price: </b></td>'+
-                                                               ' <td>'+last_bill_amount+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Invoice Date: </b></td>'+
-                                                               ' <td>'+last_inv_date+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Invoice Price: </b></td>'+
-                                                               ' <td>'+last_inv_amount+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b> Warehouse Qty: </b></td>'+
-                                                               ' <td>'+
-                                                                   ' <div> <table>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 1 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 2 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 3 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                   ' </table> </div>'+
-                                                               ' </td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td> <b> Total Qty on Hand: </b></td>'+
-                                                               ' <td>'+ total_on_hand +'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Warehouse Available Qty:</b></td>'+
-                                                               ' <td>'+
-                                                                   ' <div> <table>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 1 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 2 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 3 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                   ' </table> </div>'+
-                                                               ' </td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Total Available Qty: </b></td>'+
-                                                               ' <td>'+ total_available +'</td>'+
-                                                           ' </tr>'+
-                                                           '</table></div>'
-                                           },
+                                                   return content},
                                            'html': true,
                                            'placement':  function(c,s){
                                                return $(s).position().top < 200 ?'bottom':'top'
@@ -224,95 +99,33 @@ odoo.define('quick_view_product_by_hover.popover_on_hover', function (require) {
                                            'trigger': 'hover',
                                        })
                                    self.$el.find('tbody').popover('show');
-                        })
-                    }
-                    if (self.state.data[rowIndex].data.id && self.state.model=='purchase.order.line') {
-                        rpc.query({
+                                   })
+                     }
+                     if (self.state.data[rowIndex].data.id && self.state.model=='purchase.order.line'){
+                                        rpc.query({
                                    model: 'purchase.order.line',
                                    method: 'get_product_details_from_purchase_order_line',
                                    args: [{
                                            'rec_id': self.state.data[rowIndex].data.id
                                            }]
                                    },{async: false}).then(function (result) {
-                                                                last_inv_date = result["last_inv_date"]
-                                                                last_inv_amount = result["last_inv_currency"] + ' ' + result["last_inv_amount"]
-                                                                last_bill_date = result["last_bill_date"]
-                                                                last_bill_amount = result["last_bill_currency"] + ' ' + result["last_bill_amount"]
-                                                                total_on_hand = result['total_on_hand']
-                                                                total_available = result['total_available']
-                                                                warehouse_on_hand_qty = result['warehouse_on_hand_qty']
-                                                                warehouse_available_qty = result['warehouse_available_qty']
+                                   content = QWeb.render('quick_view_product_by_hover.product_detail_template', {
+                                   product_name :  self.state.data[rowIndex].data.name,
+                                   last_bill_date: result["last_bill_date"],
+                                   last_bill_amount: result["last_bill_currency"] + ' ' + result["last_bill_amount"],
+                                   last_inv_date: result["last_inv_date"],
+                                   last_inv_amount: result["last_inv_currency"] + ' ' + result["last_inv_amount"],
+                                   total_on_hand: result['total_on_hand'],
+                                   total_available: result['total_available'],
+                                   warehouse_on_hand_qty: result['warehouse_on_hand_qty'],
+                                   warehouse_available_qty: result['warehouse_available_qty'],
+                                   });
                                    self.$el.find('tbody').popover('dispose');
-                                   self.$el.find('tbody').popover(
+                                    self.$el.find('tbody').popover(
                                        {
                                            animation: true,
                                            'content': function(e){
-                                                   return '<div style="height:100%; width:auto;"><h4 style="background-color: #DCDCDC;color: Black;">'+self.state.data[rowIndex].data.name+'</h4>'+
-                                                           '<table>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Billed Date: </b></td>'+
-                                                               ' <td>'+last_bill_date+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Billed Price: </b></td>'+
-                                                               ' <td>'+last_bill_amount+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Invoice Date: </b></td>'+
-                                                               ' <td>'+last_inv_date+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Last Invoice Price: </b></td>'+
-                                                               ' <td>'+last_inv_amount+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b> Warehouse Qty: </b></td>'+
-                                                               ' <td>'+
-                                                                   ' <div> <table>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 1 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 2 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 3 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                   ' </table> </div>'+
-                                                               ' </td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td> <b> Total Qty on Hand: </b></td>'+
-                                                               ' <td>'+total_on_hand+'</td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Warehouse Available Qty:</b></td>'+
-                                                               ' <td>'+
-                                                                   ' <div> <table>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 1 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 2 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                       '<tr>'+
-                                                                           ' <td>Warehouse 3 Name :</td>'+
-                                                                           ' <td>'+ 1 +'</td>'+
-                                                                       '</tr>'+
-                                                                   ' </table> </div>'+
-                                                               ' </td>'+
-                                                           ' </tr>'+
-                                                           ' <tr>'+
-                                                               ' <td><b>Total Available Qty: </b></td>'+
-                                                               ' <td>'+ total_available +'</td>'+
-                                                           ' </tr>'+
-                                                           '</table></div>'
-                                           },
+                                                   return content},
                                            'html': true,
                                            'placement':  function(c,s){
                                                return $(s).position().top < 200 ?'bottom':'top'
@@ -320,19 +133,14 @@ odoo.define('quick_view_product_by_hover.popover_on_hover', function (require) {
                                            'trigger': 'hover',
                                        })
                                    self.$el.find('tbody').popover('show');
-                        })
-                    }
+                                   })
+                     }
                 }
             }
         },
         // Mouse removed out
         _on_not_hovering_mouse: function (event) {
-
-            var self = this;
             $('div.popover').remove();
-//            if (self.state.model=='sale.order.line'){
-//                $('div.popover').remove();
-//            }
         },
     });
 });
