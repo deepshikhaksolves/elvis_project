@@ -7,7 +7,7 @@ class SaleOrderLineExtend(models.Model):
     _inherit = "sale.order.line"
 
     @api.model
-    def get_product_details_from_sale_order_line(self, vals):
+    def get_product_details(self, vals):
         """This code fetches all the data and show pop-up in sale-order."""
         # Sale order customer
         sol_obj = self.env['sale.order.line'].browse(vals['rec_id'])

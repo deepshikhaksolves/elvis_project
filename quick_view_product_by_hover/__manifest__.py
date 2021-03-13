@@ -16,6 +16,9 @@
     'data': [
         'views/assets.xml',
         'views/res_config_settings_view.xml',
+        'views/account_view.xml',
+        'views/purchase_views.xml',
+        'views/sale_view.xml',
     ],
     'qweb': [
         'static/src/xml/pop_up_template.xml',
