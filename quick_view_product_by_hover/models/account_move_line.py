@@ -16,7 +16,7 @@ class AccountMoveLineExtend(models.Model):
         last_product_invoices = False
         last_product_bills = False
         # This code fetches all the data and show pop-up in credit note and customer invoice.
-        if type == "out_invoice" or type == "in_refund":
+        if type == "out_invoice" or type == "out_refund":
             # get last invoice for this customer
             customer_last_invoices = self.env['account.move'].search(
                 [('partner_id', '=', partner_id), ('state', '=', 'posted'),
@@ -30,7 +30,7 @@ class AccountMoveLineExtend(models.Model):
             last_product_bills = last_bills.mapped('line_ids').filtered(
                 lambda inv_line: inv_line.product_id == product_id)
         # This code fetches all the data and show pop-up in refunds and vendor bill.
-        if type == "in_invoice" or type == "out_refund":
+        if type == "in_invoice" or type == "in_refund":
             # get last invoice for this customer
             customer_last_invoices = self.env['account.move'].search(
                 [('state', '=', 'posted'), ('move_type', '=', 'out_invoice')],
