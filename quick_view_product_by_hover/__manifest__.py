@@ -12,7 +12,7 @@
     'website': "http://www.ksolves.com",
     'category': 'Accounts',
     'version': '14.0.0.1',
-    'depends': ['sale_management', 'purchase', 'account'],
+    'depends': ['sale_management', 'purchase', 'account', 'stock'],
     'data': [
         'views/assets.xml',
         'views/res_config_settings_view.xml',
