@@ -21,6 +21,12 @@ odoo.define('quick_view_product_by_hover.popover_on_hover', function (require) {
             this._on_hovering_mouse();
             return this._super.apply(this, arguments);
         },
+        
+//        To remove the pop-up
+        on_detach_callback: function () {
+            this.$el.popover('dispose')
+
+        },
 
         // Mouser Hover event for the Pop Over
         _on_hovering_mouse: function () {
